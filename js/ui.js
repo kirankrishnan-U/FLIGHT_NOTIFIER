@@ -1,33 +1,23 @@
-function updateFlightCard(f){
+function updateFlightCard(flight, updated) {
 
-    document.getElementById("flightTitle").innerHTML =
-        f.flight;
-
-    document.getElementById("status").innerHTML =
-        f.status;
-
-    document.getElementById("origin").innerHTML =
-        f.origin;
-
-    document.getElementById("scheduled").innerHTML =
-        f.scheduled;
-
-    document.getElementById("estimated").innerHTML =
-        f.estimated;
-
-    document.getElementById("terminal").innerHTML =
-        f.terminal;
-
-    document.getElementById("gate").innerHTML =
-        f.gate || "-";
-
-    document.getElementById("updated").innerHTML =
-        data.updated || "-";
-
+    document.getElementById("flightTitle").textContent = flight.flight;
+    document.getElementById("status").textContent = flight.status;
+    document.getElementById("origin").textContent = flight.origin;
+    document.getElementById("scheduled").textContent = flight.scheduled;
+    document.getElementById("estimated").textContent = flight.estimated;
+    document.getElementById("terminal").textContent = flight.terminal || "-";
+    document.getElementById("gate").textContent = flight.gate || "-";
+    document.getElementById("updated").textContent = updated || "-";
 }
 
-function showFlightNotFound(){
+function showFlightNotFound() {
 
-    alert("Flight not found");
-
+    document.getElementById("flightTitle").textContent = "Flight Not Found";
+    document.getElementById("status").textContent = "-";
+    document.getElementById("origin").textContent = "-";
+    document.getElementById("scheduled").textContent = "-";
+    document.getElementById("estimated").textContent = "-";
+    document.getElementById("terminal").textContent = "-";
+    document.getElementById("gate").textContent = "-";
+    document.getElementById("updated").textContent = "-";
 }

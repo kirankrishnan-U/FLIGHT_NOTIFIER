@@ -1,0 +1,24 @@
+{
+  "updated": "2026-07-07 22:55",
+  "arrivals": [
+    {
+      "flight": "EK532",
+      "origin": "Dubai",
+      "scheduled": "02:55",
+      "estimated": "02:47",
+      "terminal": "T3",
+      "gate": "A12",
+      "status": "On Time"
+    },
+    {
+      "flight": "AI682",
+      "origin": "Mumbai",
+      "scheduled": "09:10",
+      "estimated": "09:20",
+      "terminal": "T1",
+      "gate": "B05",
+      "status": "Delayed"
+    }
+  ],
+  "departures": []
+}

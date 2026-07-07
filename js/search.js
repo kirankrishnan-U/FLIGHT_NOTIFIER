@@ -1,6 +1,8 @@
+let currentMode = "arrivals";
+
 async function searchFlight() {
 
-    const flight = document
+    const flightNo = document
         .getElementById("flightInput")
         .value
         .trim()
@@ -8,17 +10,17 @@ async function searchFlight() {
 
     const data = await loadFlights();
 
-    const mode = currentMode || "arrivals";
+    const list = data[currentMode] || [];
 
-    const result = data[mode].find(f =>
-        f.flight.toUpperCase() === flight
+    const flight = list.find(f =>
+        f.flight.toUpperCase() === flightNo
     );
 
-    if (result) {
+    if (flight) {
 
-        updateFlightCard(result);
+        updateFlightCard(flight, data.updated);
 
-        saveRecentSearch(flight);
+        saveRecentSearch(flightNo);
 
     } else {
 
