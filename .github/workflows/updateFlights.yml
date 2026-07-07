@@ -1,7 +1,12 @@
 name: Update Flight Data
 
 on:
+  schedule:
+    - cron: "*/10 * * * *"
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   update:
@@ -10,10 +15,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      - name: Run Flight Fetcher
+      - name: Install dependencies
+        run: npm install axios cheerio
+
+      - name: Fetch flights
         run: node scripts/fetchFlights.js
+
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add data/flights.json
+          git diff --cached --quiet || git commit -m "Update flights"
+          git push

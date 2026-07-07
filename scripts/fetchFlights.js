@@ -1,19 +1,24 @@
-// fetchFlights.js
-// Placeholder for Release 0.4
+const fs = require("fs");
 
-console.log("Flight Notify - Fetch Flights");
+const flights = {
+    updated: new Date().toISOString(),
+    arrivals: [
+        {
+            flight: "EK532",
+            origin: "Dubai",
+            scheduled: "02:55",
+            estimated: "02:47",
+            terminal: "T3",
+            gate: "A12",
+            status: "On Time"
+        }
+    ],
+    departures: []
+};
 
-async function fetchFlights() {
-    console.log("Connecting to CIAL...");
+fs.writeFileSync(
+    "data/flights.json",
+    JSON.stringify(flights, null, 2)
+);
 
-    // Live implementation will be added later
-    const flights = {
-        updated: new Date().toISOString(),
-        arrivals: [],
-        departures: []
-    };
-
-    console.log(JSON.stringify(flights, null, 2));
-}
-
-fetchFlights();
+console.log("Flight data updated.");
