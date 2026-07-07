@@ -1,2 +1,1 @@
-# Flight Notify PWA
-Initial starter project. Next version will add CIAL scraping and notifications.
+Flight Notify V2 starter
