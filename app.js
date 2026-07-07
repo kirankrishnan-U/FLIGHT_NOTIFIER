@@ -1,0 +1,1 @@
+async function loadStatus(){try{const r=await fetch('data/status.json?'+Date.now());const d=await r.json();status.textContent=d.status;origin.textContent=d.origin;scheduled.textContent=d.scheduled;estimated.textContent=d.estimated;updated.textContent=d.updated;}catch(e){status.textContent='Unavailable';}}loadStatus();

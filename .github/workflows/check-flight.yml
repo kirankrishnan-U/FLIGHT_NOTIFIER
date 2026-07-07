@@ -1,0 +1,10 @@
+name: Flight Check
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+jobs:
+  placeholder:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "CIAL monitor will be added in next version."
