@@ -22,8 +22,10 @@ jobs:
       - name: Install dependencies
         run: npm install axios cheerio
 
-      - name: Fetch flights
-        run: node scripts/fetchFlights.js
+      - name: Run Flight Fetcher
+  env:
+    AVIATIONSTACK_API_KEY: ${{ secrets.AVIATIONSTACK_API_KEY }}
+  run: node scripts/fetchFlights.jss
 
       - name: Commit changes
         run: |
