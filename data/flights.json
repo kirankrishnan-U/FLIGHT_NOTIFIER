@@ -1,5 +1,5 @@
 {
-  "updated": "2026-07-10T17:58:42.651Z",
+  "updated": "2026-07-10T19:46:14.306Z",
   "arrivals": [
     {
       "flight": "EK532",
@@ -7,7 +7,7 @@
       "origin": "Dubai",
       "destination": "Cochin International",
       "scheduled": "2026-07-11T02:55:00+00:00",
-      "estimated": null,
+      "estimated": "2026-07-11T02:50:00+00:00",
       "actual": null,
       "terminal": "MAIN",
       "gate": "-",
