@@ -1,17 +1,17 @@
 {
-  "updated": "2026-07-13T11:21:08.397Z",
+  "updated": "2026-07-13T13:34:04.772Z",
   "arrivals": [
     {
       "flight": "EK532",
       "airline": "Emirates",
       "origin": "Dubai",
       "destination": "Cochin International",
-      "scheduled": "2026-07-13T02:55:00+00:00",
-      "estimated": "2026-07-13T02:44:00+00:00",
-      "actual": "2026-07-13T02:45:00+00:00",
-      "terminal": "3",
+      "scheduled": "2026-07-14T02:55:00+00:00",
+      "estimated": null,
+      "actual": null,
+      "terminal": "MAIN",
       "gate": "-",
-      "status": "landed"
+      "status": "scheduled"
     }
   ],
   "departures": []
