@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-08T16:13:20.570Z",
+  "updated": "2026-08-08T16:56:27.824Z",
   "arrivals": [
     {
       "flight": "EK532",
@@ -11,7 +11,7 @@
       "actual": null,
       "terminal": "MAIN",
       "gate": "-",
-      "status": "scheduled"
+      "status": "active"
     }
   ],
   "departures": []
