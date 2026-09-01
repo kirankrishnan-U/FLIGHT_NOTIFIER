@@ -8,24 +8,68 @@ async function searchFlight() {
         .trim()
         .toUpperCase();
 
-    const data = await loadFlights();
+    if (!flightNo) {
+        showFlightNotFound();
+        return;
+    }
 
-    const list = data[currentMode] || [];
+    try {
 
-    const flight = list.find(f =>
-        f.flight.toUpperCase() === flightNo
-    );
+        const data = await loadFlights();
 
-    if (flight) {
+        console.log("Flight data received:", data);
 
-        updateFlightCard(flight, data.updated);
+        // API error
+        if (data.error) {
+            console.error("Search error:", data.error);
+            showFlightNotFound();
+            return;
+        }
 
-        saveRecentSearch(flightNo);
+        const list = data[currentMode] || [];
 
-    } else {
+        const flight = list.find(f =>
+            f.flight &&
+            f.flight.toUpperCase() === flightNo
+        );
 
+        if (flight) {
+
+            updateFlightCard(flight, data.updated);
+
+            saveRecentSearch(flightNo);
+
+        } else {
+
+            console.log("Flight not found in:", list);
+            showFlightNotFound();
+
+        }
+
+    } catch (error) {
+
+        console.error("Search failed:", error);
         showFlightNotFound();
 
     }
-
 }
+
+
+// Arrivals / Departures buttons
+
+document.getElementById("arrivalBtn").addEventListener("click", () => {
+
+    currentMode = "arrivals";
+
+    console.log("Mode: arrivals");
+
+});
+
+
+document.getElementById("departureBtn").addEventListener("click", () => {
+
+    currentMode = "departures";
+
+    console.log("Mode: departures");
+
+});
