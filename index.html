@@ -1,8 +1,230 @@
-<!doctype html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>Flight Notify V3</title><link rel='stylesheet' href='style.css'></head><body><div class='app'><h1>✈ Flight Notify</h1><div class='card'><div class="tabs">
-    <button id="arrivalBtn">Arrivals</button>
-    <button id="departureBtn">Departures</button>
-</div><label>Date</label><input type='date' id='date'><label>Flight Number</label><div class='search'><input id='flightInput' placeholder='EK532'><button onclick='searchFlight()'>Search</button></div></div><div class='card'><h2 id='flightTitle'>No Flight Selected</h2><p>Status: <span id='status'>-</span></p><p>Origin: <span id='origin'>-</span></p><p>Scheduled: <span id='scheduled'>-</span></p><p>Estimated: <span id='estimated'>-</span></p><p>Terminal: <span id='terminal'>-</span></p><p>Gate: <span id='gate'>-</span></p><p>Updated: <span id='updated'>-</span></p><button onclick='toggleFav()'>⭐ Favourite</button> <button onclick='toggleNotify()'>🔔 Notify</button></div><div class='nav'><button>🏠</button><button>⭐</button><button>🕒</button><button>⚙️</button></div><script src="js/api.js"></script>
-<script src="js/storage.js"></script>
-<script src="js/ui.js"></script>
-<script src="js/search.js"></script>
-<script src="app.js"></script></body></html>
+export default {
+  async fetch(request, env) {
+    const url = new URL(request.url);
+
+    const headers = {
+      "Content-Type": "application/json",
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type"
+    };
+
+    // CORS preflight
+    if (request.method === "OPTIONS") {
+      return new Response(null, { headers });
+    }
+
+    // Only GET requests
+    if (request.method !== "GET") {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Only GET requests are allowed"
+        }),
+        { status: 405, headers }
+      );
+    }
+
+    // Get flight number
+    const flight = url.searchParams.get("flight");
+
+    if (!flight) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Please provide a flight number",
+          example: "/?flight=EK532"
+        }),
+        { status: 400, headers }
+      );
+    }
+
+    const flightNumber = flight.trim().toUpperCase();
+
+    // KV cache key
+    const cacheKey = `flight:${flightNumber}`;
+
+    try {
+      /*
+       * =====================================================
+       * 1. CHECK KV CACHE FIRST
+       * =====================================================
+       */
+
+      const cached = await env.FLIGHT_DATA.get(cacheKey);
+
+      if (cached) {
+        console.log("Returning cached flight:", flightNumber);
+
+        const cachedData = JSON.parse(cached);
+
+        return new Response(
+          JSON.stringify({
+            ...cachedData,
+            source: "cache"
+          }),
+          {
+            status: 200,
+            headers
+          }
+        );
+      }
+
+      /*
+       * =====================================================
+       * 2. NO CACHE → CALL AVIATIONSTACK
+       * =====================================================
+       */
+
+      console.log("Fetching from AviationStack:", flightNumber);
+
+      const apiUrl =
+        `https://api.aviationstack.com/v1/flights` +
+        `?access_key=${env.AVIATIONSTACK_API_KEY}` +
+        `&flight_iata=${encodeURIComponent(flightNumber)}`;
+
+      const response = await fetch(apiUrl);
+      const data = await response.json();
+
+      /*
+       * AviationStack rate limit
+       */
+      if (response.status === 429) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: "AviationStack API limit reached",
+            provider_status: 429
+          }),
+          {
+            status: 429,
+            headers
+          }
+        );
+      }
+
+      /*
+       * Other API errors
+       */
+      if (!response.ok || data.error) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: data.error || "Flight API request failed"
+          }),
+          {
+            status: response.status,
+            headers
+          }
+        );
+      }
+
+      /*
+       * Flight not found
+       */
+      if (!data.data || data.data.length === 0) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: `Flight ${flightNumber} not found`
+          }),
+          {
+            status: 404,
+            headers
+          }
+        );
+      }
+
+      const f = data.data[0];
+
+      /*
+       * =====================================================
+       * 3. FORMAT FLIGHT DATA
+       * =====================================================
+       */
+
+      const result = {
+        success: true,
+
+        flight: f.flight?.iata || flightNumber,
+
+        airline: f.airline?.name || "-",
+
+        departure: {
+          airport: f.departure?.airport || "-",
+          iata: f.departure?.iata || "-",
+          terminal: f.departure?.terminal || "-",
+          gate: f.departure?.gate || "-",
+          scheduled: f.departure?.scheduled || null,
+          estimated: f.departure?.estimated || null,
+          actual: f.departure?.actual || null
+        },
+
+        arrival: {
+          airport: f.arrival?.airport || "-",
+          iata: f.arrival?.iata || "-",
+          terminal: f.arrival?.terminal || "-",
+          gate: f.arrival?.gate || "-",
+          scheduled: f.arrival?.scheduled || null,
+          estimated: f.arrival?.estimated || null,
+          actual: f.arrival?.actual || null
+        },
+
+        status: f.flight_status || "unknown",
+
+        updated: new Date().toISOString()
+      };
+
+      /*
+       * =====================================================
+       * 4. SAVE RESULT TO KV
+       * =====================================================
+       *
+       * Cache for 10 minutes.
+       * Later we will make this user-configurable.
+       */
+
+      await env.FLIGHT_DATA.put(
+        cacheKey,
+        JSON.stringify(result),
+        {
+          expirationTtl: 600
+        }
+      );
+
+      console.log("Flight saved to KV:", flightNumber);
+
+      /*
+       * =====================================================
+       * 5. RETURN RESULT
+       * =====================================================
+       */
+
+      return new Response(
+        JSON.stringify({
+          ...result,
+          source: "aviationstack"
+        }),
+        {
+          status: 200,
+          headers
+        }
+      );
+
+    } catch (error) {
+
+      console.error("Worker error:", error);
+
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Unable to process flight request"
+        }),
+        {
+          status: 500,
+          headers
+        }
+      );
+    }
+  }
+};
