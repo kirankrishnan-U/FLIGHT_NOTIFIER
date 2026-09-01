@@ -30,7 +30,9 @@ async function loadFlights() {
             };
         }
 
-        // Send BOTH flight number and selected date
+        /*
+         * Send flight number + selected date
+         */
         const url =
             API_URL +
             "?flight=" +
@@ -46,7 +48,9 @@ async function loadFlights() {
 
         console.log("Flight API response:", result);
 
-        // Worker/API error
+        /*
+         * Worker/API error
+         */
         if (!response.ok || !result.success) {
 
             console.error(
@@ -63,51 +67,132 @@ async function loadFlights() {
             };
         }
 
-        // Convert Worker response
-        // into the format search.js expects
-        const flight = {
+        /*
+         * Check which tab is selected
+         */
+        const mode =
+            typeof currentMode !== "undefined"
+                ? currentMode
+                : "arrivals";
 
-            flight:
-                result.flight,
+        /*
+         * =====================================================
+         * ARRIVALS
+         * =====================================================
+         */
 
-            airline:
-                result.airline,
+        if (mode === "arrivals") {
 
-            origin:
-                result.departure?.airport || "-",
+            const flight = {
 
-            destination:
-                result.arrival?.airport || "-",
+                flight:
+                    result.flight,
 
-            scheduled:
-                result.arrival?.scheduled || null,
+                airline:
+                    result.airline,
 
-            estimated:
-                result.arrival?.estimated || null,
+                origin:
+                    result.departure?.airport || "-",
 
-            actual:
-                result.arrival?.actual || null,
+                destination:
+                    result.arrival?.airport || "-",
 
-            terminal:
-                result.arrival?.terminal || "-",
+                scheduled:
+                    result.arrival?.scheduled || null,
 
-            gate:
-                result.arrival?.gate || "-",
+                estimated:
+                    result.arrival?.estimated || null,
 
-            status:
-                result.status || "unknown"
-        };
+                actual:
+                    result.arrival?.actual || null,
 
+                terminal:
+                    result.arrival?.terminal || "-",
+
+                gate:
+                    result.arrival?.gate || "-",
+
+                status:
+                    result.status || "unknown"
+            };
+
+            return {
+
+                updated:
+                    result.updated,
+
+                arrivals:
+                    [flight],
+
+                departures:
+                    []
+            };
+        }
+
+        /*
+         * =====================================================
+         * DEPARTURES
+         * =====================================================
+         */
+
+        if (mode === "departures") {
+
+            const flight = {
+
+                flight:
+                    result.flight,
+
+                airline:
+                    result.airline,
+
+                origin:
+                    result.departure?.airport || "-",
+
+                destination:
+                    result.arrival?.airport || "-",
+
+                scheduled:
+                    result.departure?.scheduled || null,
+
+                estimated:
+                    result.departure?.estimated || null,
+
+                actual:
+                    result.departure?.actual || null,
+
+                terminal:
+                    result.departure?.terminal || "-",
+
+                gate:
+                    result.departure?.gate || "-",
+
+                status:
+                    result.status || "unknown"
+            };
+
+            return {
+
+                updated:
+                    result.updated,
+
+                arrivals:
+                    [],
+
+                departures:
+                    [flight]
+            };
+        }
+
+        /*
+         * Safety fallback
+         */
         return {
 
-            updated:
-                result.updated,
+            arrivals: [],
 
-            arrivals:
-                [flight],
+            departures: [],
 
-            departures:
-                []
+            error: "Unknown flight mode"
         };
 
     } catch (err) {
