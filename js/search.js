@@ -1,5 +1,3 @@
-let currentMode = "arrivals";
-
 async function searchFlight() {
 
     const input = document.getElementById("flightInput");
