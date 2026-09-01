@@ -1,230 +1,116 @@
-export default {
-  async fetch(request, env) {
-    const url = new URL(request.url);
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Flight Notify V3</title>
+    <link rel="stylesheet" href="style.css">
+</head>
 
-    const headers = {
-      "Content-Type": "application/json",
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type"
-    };
+<body>
 
-    // CORS preflight
-    if (request.method === "OPTIONS") {
-      return new Response(null, { headers });
-    }
+<div class="app">
 
-    // Only GET requests
-    if (request.method !== "GET") {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: "Only GET requests are allowed"
-        }),
-        { status: 405, headers }
-      );
-    }
+    <h1>✈ Flight Notify</h1>
 
-    // Get flight number
-    const flight = url.searchParams.get("flight");
+    <div class="card">
 
-    if (!flight) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: "Please provide a flight number",
-          example: "/?flight=EK532"
-        }),
-        { status: 400, headers }
-      );
-    }
+        <div class="tabs">
+            <button id="arrivalBtn">Arrivals</button>
+            <button id="departureBtn">Departures</button>
+        </div>
 
-    const flightNumber = flight.trim().toUpperCase();
+        <label>Date</label>
+        <input type="date" id="date">
 
-    // KV cache key
-    const cacheKey = `flight:${flightNumber}`;
+        <label>Flight Number</label>
 
-    try {
-      /*
-       * =====================================================
-       * 1. CHECK KV CACHE FIRST
-       * =====================================================
-       */
+        <div class="search">
+            <input id="flightInput" placeholder="EK532">
+            <button onclick="searchFlight()">Search</button>
+        </div>
 
-      const cached = await env.FLIGHT_DATA.get(cacheKey);
+        <label>Refresh Interval</label>
 
-      if (cached) {
-        console.log("Returning cached flight:", flightNumber);
+        <select id="refreshInterval">
+            <option value="5">Every 5 minutes</option>
+            <option value="10" selected>Every 10 minutes</option>
+            <option value="15">Every 15 minutes</option>
+            <option value="30">Every 30 minutes</option>
+            <option value="60">Every 1 hour</option>
+        </select>
 
-        const cachedData = JSON.parse(cached);
+        <label>Monitoring Duration</label>
 
-        return new Response(
-          JSON.stringify({
-            ...cachedData,
-            source: "cache"
-          }),
-          {
-            status: 200,
-            headers
-          }
-        );
-      }
+        <select id="monitorDuration">
+            <option value="30">30 minutes</option>
+            <option value="60" selected>1 hour</option>
+            <option value="180">3 hours</option>
+            <option value="360">6 hours</option>
+            <option value="until_landed">Until flight lands</option>
+        </select>
 
-      /*
-       * =====================================================
-       * 2. NO CACHE → CALL AVIATIONSTACK
-       * =====================================================
-       */
+        <div class="monitor-buttons">
 
-      console.log("Fetching from AviationStack:", flightNumber);
+            <button id="startMonitorBtn" onclick="startMonitoring()">
+                🔔 Start Monitoring
+            </button>
 
-      const apiUrl =
-        `https://api.aviationstack.com/v1/flights` +
-        `?access_key=${env.AVIATIONSTACK_API_KEY}` +
-        `&flight_iata=${encodeURIComponent(flightNumber)}`;
+            <button id="stopMonitorBtn" onclick="stopMonitoring()" disabled>
+                ⛔ Stop
+            </button>
 
-      const response = await fetch(apiUrl);
-      const data = await response.json();
+        </div>
 
-      /*
-       * AviationStack rate limit
-       */
-      if (response.status === 429) {
-        return new Response(
-          JSON.stringify({
-            success: false,
-            error: "AviationStack API limit reached",
-            provider_status: 429
-          }),
-          {
-            status: 429,
-            headers
-          }
-        );
-      }
+        <p id="monitorStatus">
+            Monitoring: OFF
+        </p>
 
-      /*
-       * Other API errors
-       */
-      if (!response.ok || data.error) {
-        return new Response(
-          JSON.stringify({
-            success: false,
-            error: data.error || "Flight API request failed"
-          }),
-          {
-            status: response.status,
-            headers
-          }
-        );
-      }
+    </div>
 
-      /*
-       * Flight not found
-       */
-      if (!data.data || data.data.length === 0) {
-        return new Response(
-          JSON.stringify({
-            success: false,
-            error: `Flight ${flightNumber} not found`
-          }),
-          {
-            status: 404,
-            headers
-          }
-        );
-      }
 
-      const f = data.data[0];
+    <div class="card">
 
-      /*
-       * =====================================================
-       * 3. FORMAT FLIGHT DATA
-       * =====================================================
-       */
+        <h2 id="flightTitle">No Flight Selected</h2>
 
-      const result = {
-        success: true,
+        <p>Status: <span id="status">-</span></p>
 
-        flight: f.flight?.iata || flightNumber,
+        <p>Origin: <span id="origin">-</span></p>
 
-        airline: f.airline?.name || "-",
+        <p>Scheduled: <span id="scheduled">-</span></p>
 
-        departure: {
-          airport: f.departure?.airport || "-",
-          iata: f.departure?.iata || "-",
-          terminal: f.departure?.terminal || "-",
-          gate: f.departure?.gate || "-",
-          scheduled: f.departure?.scheduled || null,
-          estimated: f.departure?.estimated || null,
-          actual: f.departure?.actual || null
-        },
+        <p>Estimated: <span id="estimated">-</span></p>
 
-        arrival: {
-          airport: f.arrival?.airport || "-",
-          iata: f.arrival?.iata || "-",
-          terminal: f.arrival?.terminal || "-",
-          gate: f.arrival?.gate || "-",
-          scheduled: f.arrival?.scheduled || null,
-          estimated: f.arrival?.estimated || null,
-          actual: f.arrival?.actual || null
-        },
+        <p>Terminal: <span id="terminal">-</span></p>
 
-        status: f.flight_status || "unknown",
+        <p>Gate: <span id="gate">-</span></p>
 
-        updated: new Date().toISOString()
-      };
+        <p>Updated: <span id="updated">-</span></p>
 
-      /*
-       * =====================================================
-       * 4. SAVE RESULT TO KV
-       * =====================================================
-       *
-       * Cache for 10 minutes.
-       * Later we will make this user-configurable.
-       */
+        <button onclick="toggleFav()">⭐ Favourite</button>
 
-      await env.FLIGHT_DATA.put(
-        cacheKey,
-        JSON.stringify(result),
-        {
-          expirationTtl: 600
-        }
-      );
+        <button onclick="toggleNotify()">🔔 Notify</button>
 
-      console.log("Flight saved to KV:", flightNumber);
+    </div>
 
-      /*
-       * =====================================================
-       * 5. RETURN RESULT
-       * =====================================================
-       */
 
-      return new Response(
-        JSON.stringify({
-          ...result,
-          source: "aviationstack"
-        }),
-        {
-          status: 200,
-          headers
-        }
-      );
+    <div class="nav">
 
-    } catch (error) {
+        <button>🏠</button>
+        <button>⭐</button>
+        <button>🕒</button>
+        <button>⚙️</button>
 
-      console.error("Worker error:", error);
+    </div>
 
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: "Unable to process flight request"
-        }),
-        {
-          status: 500,
-          headers
-        }
-      );
-    }
-  }
-};
+</div>
+
+
+<script src="js/api.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/search.js"></script>
+<script src="app.js"></script>
+
+</body>
+</html>
